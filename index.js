@@ -7,7 +7,7 @@ require('dotenv').config()
 const Person = require('./models/person')
 
 const requestLogger = (request, response, next) => {
-/*   console.log('Method:', request.method)
+/*   console.log('Met¢hod:', request.method)
   console.log('Path:  ', request.path)
   console.log('Body:  ', request.body)
   console.log('---') */
@@ -26,16 +26,33 @@ app.get('/', (req, res) => {
 //uuden luonti
 app.post('/api/persons', (request, response, next) => {
   const body = request.body
+  console.log(body)
   Person.find({})
     .then(result => {
+
       console.log(result)
-      if (person) {
-        result.forEach(person => {
-          person.concat(person.name, person.number)
+      const checkPersons = result.some(findPerson => findPerson.name === body.name)
+
+      if (checkPersons) {
+        return response.status(400).json({
+          error: 'Sama henkilö on jo tietokannassa!'
         })
       } else {
-        response.status(404).end()
+        
+        // Jos tietokannasta ei löydy entuudestaan samaa henkilöä,
+        // niin ainoastaan silloin me tallennetaan kyseinen henkilö
+        // tietokantaan. Voit mietti myös miten otetaan huomioon,
+        // jos henkilö on tietokannassa jo mutta halutaan esim.
+        // päivittää henkilön numero ainoastaan. Tälle kentiees
+        // vois lisätä uuden if ehdon :)
+        const newPerson = new Person({
+          name: body.name,
+          number: body.number
+        });
+        newPerson.save()
+        return response.json(newPerson)
       }
+
     })
     .catch(error => next(error))
 
@@ -51,17 +68,6 @@ app.post('/api/persons', (request, response, next) => {
       error: 'Numero puuttuu'
     })
   }
-
-  const person = new Person({
-    name: body.name,
-    number: body.number
-  })
-
-  person.save().then(savedPerson => {
-    console.log(savedPerson)
-    response.json(savedPerson)
-  })
-  .catch(error => next(error))
 })
 
 //kaikkien luettelo
